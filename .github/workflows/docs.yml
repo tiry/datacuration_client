@@ -35,12 +35,27 @@ jobs:
 
       - name: Generate documentation
         run: |
+          # Create a temporary directory for documentation
+          mkdir -p temp_docs
+          
+          # Generate documentation in the temporary directory
+          pdoc --html --output-dir temp_docs datacuration_api datacuration_cli
+          
+          # Create the final docs directory
           mkdir -p docs
-          pdoc --html --output-dir docs datacuration_api datacuration_cli
-          mv docs/datacuration_api/* docs/
-          mv docs/datacuration_cli/* docs/
-          rmdir docs/datacuration_api docs/datacuration_cli
+          
+          # Copy the generated documentation to the docs directory
+          cp -r temp_docs/datacuration_api/* docs/
+          cp -r temp_docs/datacuration_cli/* docs/
+          
+          # Ensure the custom documentation files are preserved
+          # (They're already in the docs directory from the checkout)
+          
+          # Add .nojekyll file to disable Jekyll processing
           touch docs/.nojekyll
+          
+          # Create an index.html file that redirects to client.html
+          echo '<html><head><meta http-equiv="refresh" content="0;URL=client.html"></head></html>' > docs/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
