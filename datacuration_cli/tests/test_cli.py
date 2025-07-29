@@ -12,13 +12,13 @@ from datacuration_cli.cli import cli, process
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     """Fixture to create a CLI runner."""
     return CliRunner()
 
 
 @pytest.fixture
-def mock_api_client():
+def mock_api_client() -> MagicMock:
     """Fixture to create a mock API client."""
     with patch("datacuration_cli.cli.DataCurationClient") as mock_client_class:
         mock_client = MagicMock()
@@ -26,14 +26,14 @@ def mock_api_client():
         yield mock_client
 
 
-def test_cli_version(runner):
+def test_cli_version(runner: CliRunner) -> None:
     """Test the CLI version command."""
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
     assert "version" in result.output.lower()
 
 
-def test_cli_auth_options():
+def test_cli_auth_options() -> None:
     """Test the CLI authentication options."""
     # Test the cli function directly instead of using the runner
     with patch("datacuration_cli.cli.config") as mock_config:
@@ -55,7 +55,7 @@ def test_cli_auth_options():
         mock_config.update.assert_any_call(auth_endpoint="https://test-auth.example.com/token")
 
 
-def test_process_command(runner, mock_api_client, tmp_path):
+def test_process_command(runner: CliRunner, mock_api_client: MagicMock, tmp_path: pytest.TempPathFactory) -> None:
     """Test the process command."""
     # Create a test file
     test_file = tmp_path / "test_file.txt"
@@ -81,7 +81,7 @@ def test_process_command(runner, mock_api_client, tmp_path):
     )
 
 
-def test_process_command_with_options(runner, mock_api_client, tmp_path):
+def test_process_command_with_options(runner: CliRunner, mock_api_client: MagicMock, tmp_path: pytest.TempPathFactory) -> None:
     """Test the process command with options."""
     # Create a test file
     test_file = tmp_path / "test_file.txt"
@@ -119,7 +119,7 @@ def test_process_command_with_options(runner, mock_api_client, tmp_path):
     )
 
 
-def test_process_command_with_output_file(runner, mock_api_client, tmp_path):
+def test_process_command_with_output_file(runner: CliRunner, mock_api_client: MagicMock, tmp_path: pytest.TempPathFactory) -> None:
     """Test the process command with output file."""
     # Create a test file
     test_file = tmp_path / "test_file.txt"
@@ -146,7 +146,7 @@ def test_process_command_with_output_file(runner, mock_api_client, tmp_path):
     assert output_file.read_text() == "Curated text content"
 
 
-def test_process_command_error(runner, mock_api_client, tmp_path):
+def test_process_command_error(runner: CliRunner, mock_api_client: MagicMock, tmp_path: pytest.TempPathFactory) -> None:
     """Test the process command with an error."""
     # Create a test file
     test_file = tmp_path / "test_file.txt"

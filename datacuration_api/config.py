@@ -80,7 +80,13 @@ class Config:
         
         Returns:
             Dict[str, str]: Form data for token request.
+            
+        Raises:
+            ValueError: If client_id or client_secret is not set.
         """
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Client ID and Client Secret must be set before requesting a token")
+            
         return {
             "grant_type": "client_credentials",
             "scope": "environment_authorization",

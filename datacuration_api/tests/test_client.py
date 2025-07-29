@@ -13,7 +13,7 @@ from datacuration_api.config import config
 
 
 @pytest.fixture
-def mock_config():
+def mock_config() -> MagicMock:
     """Fixture to set up a mock configuration."""
     with patch("datacuration_api.client.config") as mock_config:
         mock_config.presign_endpoint = "https://test-api.example.com/presign"
@@ -37,12 +37,12 @@ def mock_config():
 
 
 @pytest.fixture
-def api_client(mock_config):
+def api_client(mock_config: MagicMock) -> DataCurationClient:
     """Fixture to create an API client with mock configuration."""
     return DataCurationClient(client_id="test_client_id", client_secret="test_client_secret")
 
 
-def test_authenticate(api_client, mock_config):
+def test_authenticate(api_client: DataCurationClient, mock_config: MagicMock) -> None:
     """Test the authenticate method."""
     with patch("requests.post") as mock_post:
         # Set up the mock response
@@ -76,7 +76,7 @@ def test_authenticate(api_client, mock_config):
         assert mock_config.token_expiry == 900
 
 
-def test_presign(api_client, mock_config):
+def test_presign(api_client: DataCurationClient, mock_config: MagicMock) -> None:
     """Test the presign method."""
     with patch("requests.post") as mock_post, \
          patch("datacuration_api.client.DataCurationClient.authenticate") as mock_auth:
@@ -110,7 +110,7 @@ def test_presign(api_client, mock_config):
         mock_auth.assert_called_once()
 
 
-def test_presign_with_options(api_client, mock_config):
+def test_presign_with_options(api_client: DataCurationClient, mock_config: MagicMock) -> None:
     """Test the presign method with options."""
     with patch("requests.post") as mock_post:
         # Set up the mock response
@@ -138,7 +138,7 @@ def test_presign_with_options(api_client, mock_config):
         )
 
 
-def test_upload_file(api_client):
+def test_upload_file(api_client: DataCurationClient) -> None:
     """Test the upload_file method."""
     with patch("datacuration_api.client.DataCurationClient.presign") as mock_presign, \
          patch("builtins.open", MagicMock()), \
@@ -177,7 +177,7 @@ def test_upload_file(api_client):
             )
 
 
-def test_get_results(api_client):
+def test_get_results(api_client: DataCurationClient) -> None:
     """Test the get_results method."""
     with patch("requests.get") as mock_get:
         # Set up the mock response
@@ -195,7 +195,7 @@ def test_get_results(api_client):
         mock_get.assert_called_once_with("https://test-s3.example.com/results")
 
 
-def test_check_status(api_client, mock_config):
+def test_check_status(api_client: DataCurationClient, mock_config: MagicMock) -> None:
     """Test the check_status method."""
     with patch("requests.get") as mock_get:
         # Set up the mock response
@@ -220,7 +220,7 @@ def test_check_status(api_client, mock_config):
         )
 
 
-def test_process_file(api_client):
+def test_process_file(api_client: DataCurationClient) -> None:
     """Test the process_file method."""
     with patch("datacuration_api.client.DataCurationClient.upload_file") as mock_upload, \
          patch("datacuration_api.client.DataCurationClient.check_status") as mock_check_status, \

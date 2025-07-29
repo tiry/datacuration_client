@@ -61,7 +61,7 @@ class DataCurationClient:
         
         return config.access_token
     
-    def presign(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    def presign(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Call the presign endpoint to get URLs for file upload and result retrieval.
         
@@ -94,7 +94,7 @@ class DataCurationClient:
         response.raise_for_status()
         return response.json()
     
-    def upload_file(self, file_path: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    def upload_file(self, file_path: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Upload a file to the Data Curation API.
         
@@ -175,7 +175,7 @@ class DataCurationClient:
         """
         response = requests.get(get_url)
         response.raise_for_status()
-        return response.text
+        return str(response.text)
     
     def process_file(
         self, 
