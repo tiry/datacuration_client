@@ -126,6 +126,11 @@ class Config:
             logger.error(error_msg)
             raise ValueError(error_msg)
         
+        # At this point, we know client_id and client_secret are not None
+        # because we've checked above and raised an error if they were missing
+        assert self.client_id is not None
+        assert self.client_secret is not None
+        
         logger.debug("Token request data prepared successfully")
         return {
             "grant_type": "client_credentials",

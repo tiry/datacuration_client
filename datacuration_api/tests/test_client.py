@@ -158,7 +158,12 @@ def test_upload_file(api_client: DataCurationClient) -> None:
         mock_file = MagicMock()
         mock_file.__enter__.return_value.read.return_value = mock_file_content
         
-        with patch("builtins.open", return_value=mock_file):
+        # Mock the Path.stat method to return a mock stat result with a size
+        mock_stat_result = MagicMock()
+        mock_stat_result.st_size = len(mock_file_content)
+        
+        with patch("builtins.open", return_value=mock_file), \
+             patch("pathlib.Path.stat", return_value=mock_stat_result):
             # Call the method
             result = api_client.upload_file("test_file.txt")
             
