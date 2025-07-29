@@ -23,7 +23,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def runner() -> CliRunner:
     """Fixture to create a CLI runner."""
-    return CliRunner()
+    return CliRunner(env=os.environ)
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def pdf_file() -> str:
 
 
 @pytest.fixture
-def load_env() -> None:
+def load_env() -> dict:
     """Fixture to load environment variables from .env file if present."""
     env_path = Path(__file__).parent.parent.parent / ".env"
     if env_path.exists():
@@ -55,22 +55,37 @@ def load_env() -> None:
     missing_vars = [var for var in required_vars if not os.environ.get(var)]
     if missing_vars:
         pytest.skip(f"Missing required environment variables: {', '.join(missing_vars)}")
+    
+    # Return environment variables needed for the test
+    return {
+        "DATA_CURATION_CLIENT_ID": os.environ.get("DATA_CURATION_CLIENT_ID", ""),
+        "DATA_CURATION_CLIENT_SECRET": os.environ.get("DATA_CURATION_CLIENT_SECRET", ""),
+        "DATA_CURATION_AUTH_ENDPOINT": os.environ.get("DATA_CURATION_AUTH_ENDPOINT", ""),
+        "DATA_CURATION_API_URL": os.environ.get("DATA_CURATION_API_URL", "")
+    }
 
 
 @pytest.mark.integration
-def test_process_pdf_file(runner: CliRunner, pdf_file: str, load_env: None) -> None:
+def test_process_pdf_file(runner: CliRunner, pdf_file: str, load_env: dict) -> None:
     """Test processing a PDF file with the actual API."""
     # Create a temporary file for the output
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_file:
         output_path = tmp_file.name
     
     try:
-        # Run the CLI command to process the PDF file
-        result = runner.invoke(cli, [
-            "process",
-            pdf_file,
-            "--output", output_path
-        ])
+        # Run the CLI command to process the PDF file with environment variables
+        result = runner.invoke(
+            cli, 
+            [
+                "--client-id", load_env["DATA_CURATION_CLIENT_ID"],
+                "--client-secret", load_env["DATA_CURATION_CLIENT_SECRET"],
+                "--auth-url", load_env["DATA_CURATION_AUTH_ENDPOINT"],
+                "--api-url", load_env["DATA_CURATION_API_URL"] or "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation",
+                "process",
+                pdf_file,
+                "--output", output_path
+            ]
+        )
         
         # Check that the command executed successfully
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
