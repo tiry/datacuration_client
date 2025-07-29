@@ -7,13 +7,14 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+from typing import Generator
 
 from datacuration_api.client import DataCurationClient
 from datacuration_api.config import config
 
 
 @pytest.fixture
-def mock_config() -> MagicMock:
+def mock_config() -> Generator[MagicMock, None, None]:
     """Fixture to set up a mock configuration."""
     with patch("datacuration_api.client.config") as mock_config:
         mock_config.presign_endpoint = "https://test-api.example.com/presign"

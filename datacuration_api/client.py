@@ -92,7 +92,8 @@ class DataCurationClient:
         )
         
         response.raise_for_status()
-        return response.json()
+        result: Dict[str, Any] = response.json()
+        return result
     
     def upload_file(self, file_path: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -158,7 +159,8 @@ class DataCurationClient:
         )
         
         response.raise_for_status()
-        return response.json()
+        result: Dict[str, Any] = response.json()
+        return result
     
     def get_results(self, get_url: str) -> str:
         """
