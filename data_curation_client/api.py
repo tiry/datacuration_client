@@ -17,15 +17,49 @@ from .config import config
 class DataCurationAPIClient:
     """Client for interacting with the Hyland Data Curation API."""
     
-    def __init__(self, api_token: Optional[str] = None) -> None:
+    def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None) -> None:
         """
         Initialize the API client.
         
         Args:
-            api_token: Optional API token. If not provided, it will be loaded from config.
+            client_id: Optional client ID. If not provided, it will be loaded from config.
+            client_secret: Optional client secret. If not provided, it will be loaded from config.
         """
-        if api_token:
-            config.update(api_token=api_token)
+        if client_id:
+            config.update(client_id=client_id)
+        if client_secret:
+            config.update(client_secret=client_secret)
+    
+    def authenticate(self) -> str:
+        """
+        Authenticate with the API and get an access token.
+        
+        Returns:
+            str: The access token.
+            
+        Raises:
+            ValueError: If client_id or client_secret is missing.
+            requests.RequestException: If the authentication request fails.
+        """
+        config.validate()
+        
+        # Make a POST request to the auth endpoint
+        response = requests.post(
+            config.auth_endpoint,
+            data=config.get_token_request_data(),
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        )
+        
+        response.raise_for_status()
+        token_data = response.json()
+        
+        # Store the access token and expiry time
+        config.access_token = token_data["access_token"]
+        config.token_expiry = token_data.get("expires_in", 900)  # Default to 15 minutes if not provided
+        
+        return config.access_token
     
     def presign(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         """
@@ -38,10 +72,14 @@ class DataCurationAPIClient:
             Dict containing job_id, put_url, and get_url.
             
         Raises:
-            ValueError: If the API token is missing.
+            ValueError: If authentication credentials are missing.
             requests.RequestException: If the API request fails.
         """
         config.validate()
+        
+        # Ensure we have a valid access token
+        if not config.access_token:
+            self.authenticate()
         
         # Default options if none provided
         if options is None:
@@ -49,7 +87,7 @@ class DataCurationAPIClient:
         
         response = requests.post(
             config.presign_endpoint,
-            headers=config.get_headers(),
+            headers=config.get_auth_headers(),
             json=options
         )
         
@@ -81,13 +119,46 @@ class DataCurationAPIClient:
         
         # Upload file to the put_url
         with open(file_path_obj, 'rb') as file:
+            file_content = file.read()
+            file_size = len(file_content)
+            
             response = requests.put(
                 presign_data['put_url'],
-                data=file
+                data=file_content,
+                headers={
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": str(file_size)
+                }
             )
             response.raise_for_status()
         
         return presign_data
+    
+    def check_status(self, job_id: str) -> Dict[str, Any]:
+        """
+        Check the status of a data curation job.
+        
+        Args:
+            job_id: The job ID to check.
+            
+        Returns:
+            Dict containing job status information.
+            
+        Raises:
+            ValueError: If the access token is missing.
+            requests.RequestException: If the API request fails.
+        """
+        if not config.access_token:
+            self.authenticate()
+        
+        status_url = f"{config.status_endpoint}/{job_id}"
+        response = requests.get(
+            status_url,
+            headers=config.get_auth_headers()
+        )
+        
+        response.raise_for_status()
+        return response.json()
     
     def get_results(self, get_url: str) -> str:
         """
@@ -135,15 +206,25 @@ class DataCurationAPIClient:
         """
         # Upload the file and get URLs
         presign_data = self.upload_file(file_path, options)
+        job_id = presign_data['job_id']
         
         if not wait:
             return json.dumps(presign_data)
         
-        # Wait for processing to complete and get results
+        # Wait for processing to complete
         retries = 0
         while retries < max_retries:
             try:
-                return self.get_results(presign_data['get_url'])
+                # Check job status
+                status_data = self.check_status(job_id)
+                
+                if status_data.get('status') == 'Done':
+                    # Job is complete, get results
+                    return self.get_results(presign_data['get_url'])
+                
+                # Job is still processing, wait and retry
+                time.sleep(retry_delay)
+                retries += 1
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
                     # Resource not ready yet, wait and retry

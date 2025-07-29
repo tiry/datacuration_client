@@ -33,6 +33,28 @@ def test_cli_version(runner):
     assert "version" in result.output.lower()
 
 
+def test_cli_auth_options():
+    """Test the CLI authentication options."""
+    # Test the cli function directly instead of using the runner
+    with patch("data_curation_client.cli.config") as mock_config:
+        # Call the cli function directly with the arguments
+        from data_curation_client.cli import cli
+        cli.callback(
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            api_url="https://test-api.example.com",
+            auth_url="https://test-auth.example.com/token"
+        )
+        
+        # Verify the config was updated
+        mock_config.update.assert_any_call(client_id="test_client_id")
+        mock_config.update.assert_any_call(client_secret="test_client_secret")
+        mock_config.update.assert_any_call(api_base_url="https://test-api.example.com")
+        mock_config.update.assert_any_call(presign_endpoint="https://test-api.example.com/presign")
+        mock_config.update.assert_any_call(status_endpoint="https://test-api.example.com/status")
+        mock_config.update.assert_any_call(auth_endpoint="https://test-auth.example.com/token")
+
+
 def test_process_command(runner, mock_api_client, tmp_path):
     """Test the process command."""
     # Create a test file

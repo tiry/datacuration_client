@@ -17,27 +17,42 @@ from .config import config
 
 @click.group()
 @click.option(
-    "--api-token", 
-    envvar="DATA_CURATION_API_TOKEN",
-    help="API token for authentication. Can also be set via DATA_CURATION_API_TOKEN environment variable."
+    "--client-id", 
+    envvar="DATA_CURATION_CLIENT_ID",
+    help="Client ID for authentication. Can also be set via DATA_CURATION_CLIENT_ID environment variable."
+)
+@click.option(
+    "--client-secret", 
+    envvar="DATA_CURATION_CLIENT_SECRET",
+    help="Client Secret for authentication. Can also be set via DATA_CURATION_CLIENT_SECRET environment variable."
 )
 @click.option(
     "--api-url", 
     envvar="DATA_CURATION_API_URL",
     help="Base URL for the Data Curation API. Can also be set via DATA_CURATION_API_URL environment variable."
 )
+@click.option(
+    "--auth-url", 
+    envvar="DATA_CURATION_AUTH_ENDPOINT",
+    help="Authentication endpoint URL. Can also be set via DATA_CURATION_AUTH_ENDPOINT environment variable."
+)
 @click.version_option()
-def cli(api_token: Optional[str], api_url: Optional[str]) -> None:
+def cli(client_id: Optional[str], client_secret: Optional[str], api_url: Optional[str], auth_url: Optional[str]) -> None:
     """
     Data Curation API Client
     
     A command-line tool for processing files through the Hyland Data Curation API.
     """
-    if api_token:
-        config.update(api_token=api_token)
+    if client_id:
+        config.update(client_id=client_id)
+    if client_secret:
+        config.update(client_secret=client_secret)
     if api_url:
         config.update(api_base_url=api_url)
         config.update(presign_endpoint=f"{api_url}/presign")
+        config.update(status_endpoint=f"{api_url}/status")
+    if auth_url:
+        config.update(auth_endpoint=auth_url)
 
 
 @cli.command()
