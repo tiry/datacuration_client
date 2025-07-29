@@ -30,4 +30,4 @@ jobs:
         DATA_CURATION_AUTH_ENDPOINT: ${{ secrets.DATA_CURATION_AUTH_ENDPOINT }}
         DATA_CURATION_API_URL: ${{ secrets.DATA_CURATION_API_URL || 'https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation' }}
       run: |
-        pytest datacuration_cli/tests/test_integration.py -v
+        pytest -m integration datacuration_cli/tests/test_integration.py -v
