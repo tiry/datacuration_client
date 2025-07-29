@@ -6,9 +6,14 @@ from environment variables, .env files, and command-line arguments.
 """
 
 import os
+import logging
 from typing import Dict, Optional, Any
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Default API endpoints
 DEFAULT_API_BASE_URL = "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation"
@@ -32,6 +37,15 @@ class Config:
         self.client_secret: Optional[str] = os.getenv("DATA_CURATION_CLIENT_SECRET")
         self.access_token: Optional[str] = None
         self.token_expiry: Optional[int] = None
+        
+        # Log configuration (masking sensitive values)
+        logger.info("Configuration initialized:")
+        logger.info(f"API Base URL: {self.api_base_url}")
+        logger.info(f"Presign Endpoint: {self.presign_endpoint}")
+        logger.info(f"Status Endpoint: {self.status_endpoint}")
+        logger.info(f"Auth Endpoint: {self.auth_endpoint}")
+        logger.info(f"Client ID: {'*' * 5 if self.client_id else 'not set'}")
+        logger.info(f"Client Secret: {'*' * 5 if self.client_secret else 'not set'}")
     
     def update(self, **kwargs: Any) -> None:
         """
@@ -42,6 +56,7 @@ class Config:
         """
         for key, value in kwargs.items():
             if hasattr(self, key) and value is not None:
+                logger.info(f"Updating config: {key} = {'*' * 5 if key in ['client_id', 'client_secret', 'access_token'] else value}")
                 setattr(self, key, value)
     
     def validate(self) -> None:
@@ -51,12 +66,24 @@ class Config:
         Raises:
             ValueError: If required configuration values are missing.
         """
-        if not self.client_id or not self.client_secret:
-            raise ValueError(
-                "Client ID and Client Secret are required. Set them using the "
+        logger.info("Validating configuration...")
+        
+        missing = []
+        if not self.client_id:
+            missing.append("Client ID")
+        if not self.client_secret:
+            missing.append("Client Secret")
+            
+        if missing:
+            error_msg = (
+                f"Missing required configuration: {', '.join(missing)}. Set them using the "
                 "DATA_CURATION_CLIENT_ID and DATA_CURATION_CLIENT_SECRET environment "
                 "variables or provide them via command-line arguments."
             )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        logger.info("Configuration validation successful")
     
     def get_auth_headers(self) -> Dict[str, str]:
         """
@@ -66,8 +93,10 @@ class Config:
             Dict[str, str]: Headers including authorization and content type.
         """
         if not self.access_token:
+            logger.error("No access token available. Call authenticate() first.")
             raise ValueError("No access token available. Call authenticate() first.")
-            
+        
+        logger.debug("Creating auth headers with access token")
         return {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
@@ -84,9 +113,20 @@ class Config:
         Raises:
             ValueError: If client_id or client_secret is not set.
         """
-        if not self.client_id or not self.client_secret:
-            raise ValueError("Client ID and Client Secret must be set before requesting a token")
+        logger.debug("Preparing token request data")
+        
+        missing = []
+        if not self.client_id:
+            missing.append("Client ID")
+        if not self.client_secret:
+            missing.append("Client Secret")
             
+        if missing:
+            error_msg = f"Missing required authentication credentials: {', '.join(missing)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        logger.debug("Token request data prepared successfully")
         return {
             "grant_type": "client_credentials",
             "scope": "environment_authorization",

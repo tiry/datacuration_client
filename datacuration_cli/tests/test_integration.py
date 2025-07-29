@@ -9,11 +9,16 @@ import os
 import json
 import pytest
 import tempfile
+import logging
 from pathlib import Path
 from click.testing import CliRunner
 from unittest.mock import patch
 
 from datacuration_cli.cli import cli
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 # Mark all tests in this file as integration tests
@@ -56,36 +61,59 @@ def load_env() -> dict:
     if missing_vars:
         pytest.skip(f"Missing required environment variables: {', '.join(missing_vars)}")
     
-    # Return environment variables needed for the test
-    return {
+    # Get environment variables needed for the test
+    env_vars = {
         "DATA_CURATION_CLIENT_ID": os.environ.get("DATA_CURATION_CLIENT_ID", ""),
         "DATA_CURATION_CLIENT_SECRET": os.environ.get("DATA_CURATION_CLIENT_SECRET", ""),
         "DATA_CURATION_AUTH_ENDPOINT": os.environ.get("DATA_CURATION_AUTH_ENDPOINT", ""),
-        "DATA_CURATION_API_URL": os.environ.get("DATA_CURATION_API_URL", "")
+        "DATA_CURATION_API_URL": os.environ.get("DATA_CURATION_API_URL", "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation")
     }
+    
+    # Log environment variables (masking secrets)
+    logger.info("Environment variables:")
+    logger.info(f"DATA_CURATION_CLIENT_ID: {'*' * 5 if env_vars['DATA_CURATION_CLIENT_ID'] else 'not set'}")
+    logger.info(f"DATA_CURATION_CLIENT_SECRET: {'*' * 5 if env_vars['DATA_CURATION_CLIENT_SECRET'] else 'not set'}")
+    logger.info(f"DATA_CURATION_AUTH_ENDPOINT: {env_vars['DATA_CURATION_AUTH_ENDPOINT']}")
+    logger.info(f"DATA_CURATION_API_URL: {env_vars['DATA_CURATION_API_URL']}")
+    
+    return env_vars
 
 
 @pytest.mark.integration
 def test_process_pdf_file(runner: CliRunner, pdf_file: str, load_env: dict) -> None:
     """Test processing a PDF file with the actual API."""
+    # Log test information
+    logger.info(f"Starting integration test with PDF file: {pdf_file}")
+    logger.info(f"PDF file exists: {Path(pdf_file).exists()}")
+    logger.info(f"PDF file size: {Path(pdf_file).stat().st_size} bytes")
+    
     # Create a temporary file for the output
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_file:
         output_path = tmp_file.name
     
+    # Build command arguments
+    api_url = load_env["DATA_CURATION_API_URL"]
+    logger.info(f"Using API URL: {api_url}")
+    
+    cmd_args = [
+        "--client-id", load_env["DATA_CURATION_CLIENT_ID"],
+        "--client-secret", load_env["DATA_CURATION_CLIENT_SECRET"],
+        "--auth-url", load_env["DATA_CURATION_AUTH_ENDPOINT"],
+        "--api-url", api_url,
+        "process",
+        pdf_file,
+        "--output", output_path
+    ]
+    logger.info(f"Command arguments: {' '.join([arg if not arg.startswith('--client') else arg for arg in cmd_args])}")
+    
     try:
         # Run the CLI command to process the PDF file with environment variables
-        result = runner.invoke(
-            cli, 
-            [
-                "--client-id", load_env["DATA_CURATION_CLIENT_ID"],
-                "--client-secret", load_env["DATA_CURATION_CLIENT_SECRET"],
-                "--auth-url", load_env["DATA_CURATION_AUTH_ENDPOINT"],
-                "--api-url", load_env["DATA_CURATION_API_URL"] or "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation",
-                "process",
-                pdf_file,
-                "--output", output_path
-            ]
-        )
+        logger.info("Invoking CLI command...")
+        result = runner.invoke(cli, cmd_args)
+        
+        # Log the result
+        logger.info(f"Command exit code: {result.exit_code}")
+        logger.info(f"Command output: {result.output}")
         
         # Check that the command executed successfully
         assert result.exit_code == 0, f"Command failed with output: {result.output}"

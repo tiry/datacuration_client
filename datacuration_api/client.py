@@ -7,11 +7,16 @@ including authentication, file upload, and result retrieval.
 
 import json
 import time
+import logging
 from typing import Dict, Any, Optional, Tuple, BinaryIO
 import requests
 from pathlib import Path
 
 from .config import config
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class DataCurationClient:
@@ -43,23 +48,33 @@ class DataCurationClient:
         """
         config.validate()
         
+        logger.info(f"Authenticating with endpoint: {config.auth_endpoint}")
+        
         # Make a POST request to the auth endpoint
-        response = requests.post(
-            config.auth_endpoint,
-            data=config.get_token_request_data(),
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded"
-            }
-        )
-        
-        response.raise_for_status()
-        token_data = response.json()
-        
-        # Store the access token and expiry time
-        config.access_token = token_data["access_token"]
-        config.token_expiry = token_data.get("expires_in", 900)  # Default to 15 minutes if not provided
-        
-        return config.access_token
+        try:
+            response = requests.post(
+                config.auth_endpoint,
+                data=config.get_token_request_data(),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            )
+            
+            logger.info(f"Auth response status code: {response.status_code}")
+            response.raise_for_status()
+            token_data = response.json()
+            
+            # Store the access token and expiry time
+            config.access_token = token_data["access_token"]
+            config.token_expiry = token_data.get("expires_in", 900)  # Default to 15 minutes if not provided
+            
+            logger.info("Authentication successful")
+            return config.access_token
+        except requests.RequestException as e:
+            logger.error(f"Authentication failed: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            raise
     
     def presign(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -85,15 +100,26 @@ class DataCurationClient:
         if options is None:
             options = {}
         
-        response = requests.post(
-            config.presign_endpoint,
-            headers=config.get_auth_headers(),
-            json=options
-        )
+        logger.info(f"Calling presign endpoint: {config.presign_endpoint}")
+        logger.info(f"Presign options: {options}")
         
-        response.raise_for_status()
-        result: Dict[str, Any] = response.json()
-        return result
+        try:
+            response = requests.post(
+                config.presign_endpoint,
+                headers=config.get_auth_headers(),
+                json=options
+            )
+            
+            logger.info(f"Presign response status code: {response.status_code}")
+            response.raise_for_status()
+            result: Dict[str, Any] = response.json()
+            logger.info(f"Presign successful, job_id: {result.get('job_id', 'unknown')}")
+            return result
+        except requests.RequestException as e:
+            logger.error(f"Presign request failed: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            raise
     
     def upload_file(self, file_path: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -113,25 +139,40 @@ class DataCurationClient:
         """
         file_path_obj = Path(file_path)
         if not file_path_obj.exists():
+            logger.error(f"File not found: {file_path}")
             raise FileNotFoundError(f"File not found: {file_path}")
+        
+        logger.info(f"Uploading file: {file_path}")
+        logger.info(f"File size: {file_path_obj.stat().st_size} bytes")
         
         # Get presigned URLs
         presign_data = self.presign(options)
         
         # Upload file to the put_url
-        with open(file_path_obj, 'rb') as file:
-            file_content = file.read()
-            file_size = len(file_content)
-            
-            response = requests.put(
-                presign_data['put_url'],
-                data=file_content,
-                headers={
-                    "Content-Type": "application/octet-stream",
-                    "Content-Length": str(file_size)
-                }
-            )
-            response.raise_for_status()
+        try:
+            with open(file_path_obj, 'rb') as file:
+                file_content = file.read()
+                file_size = len(file_content)
+                
+                logger.info(f"Uploading to put_url: {presign_data['put_url']}")
+                
+                response = requests.put(
+                    presign_data['put_url'],
+                    data=file_content,
+                    headers={
+                        "Content-Type": "application/octet-stream",
+                        "Content-Length": str(file_size)
+                    }
+                )
+                
+                logger.info(f"Upload response status code: {response.status_code}")
+                response.raise_for_status()
+                logger.info("File upload successful")
+        except requests.RequestException as e:
+            logger.error(f"File upload failed: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            raise
         
         return presign_data
     
@@ -153,14 +194,24 @@ class DataCurationClient:
             self.authenticate()
         
         status_url = f"{config.status_endpoint}/{job_id}"
-        response = requests.get(
-            status_url,
-            headers=config.get_auth_headers()
-        )
+        logger.info(f"Checking job status at: {status_url}")
         
-        response.raise_for_status()
-        result: Dict[str, Any] = response.json()
-        return result
+        try:
+            response = requests.get(
+                status_url,
+                headers=config.get_auth_headers()
+            )
+            
+            logger.info(f"Status check response code: {response.status_code}")
+            response.raise_for_status()
+            result: Dict[str, Any] = response.json()
+            logger.info(f"Status check result: {result}")
+            return result
+        except requests.RequestException as e:
+            logger.error(f"Status check failed: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            raise
     
     def get_results(self, get_url: str) -> str:
         """
@@ -175,9 +226,20 @@ class DataCurationClient:
         Raises:
             requests.RequestException: If the API request fails.
         """
-        response = requests.get(get_url)
-        response.raise_for_status()
-        return str(response.text)
+        logger.info(f"Getting results from: {get_url}")
+        
+        try:
+            response = requests.get(get_url)
+            logger.info(f"Get results response code: {response.status_code}")
+            response.raise_for_status()
+            result = str(response.text)
+            logger.info(f"Results retrieved, length: {len(result)} characters")
+            return result
+        except requests.RequestException as e:
+            logger.error(f"Get results failed: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
+            raise
     
     def process_file(
         self, 
@@ -206,11 +268,16 @@ class DataCurationClient:
             requests.RequestException: If the API request fails.
             TimeoutError: If max_retries is reached while waiting for results.
         """
+        logger.info(f"Processing file: {file_path}")
+        logger.info(f"Options: {options}")
+        logger.info(f"Wait for completion: {wait}")
+        
         # Upload the file and get URLs
         presign_data = self.upload_file(file_path, options)
         job_id = presign_data['job_id']
         
         if not wait:
+            logger.info("Not waiting for results, returning presign data")
             return json.dumps(presign_data)
         
         # Wait for processing to complete
@@ -218,22 +285,36 @@ class DataCurationClient:
         while retries < max_retries:
             try:
                 # Check job status
+                logger.info(f"Checking job status (attempt {retries+1}/{max_retries})")
                 status_data = self.check_status(job_id)
+                logger.info(f"Job status: {status_data.get('status', 'unknown')}")
                 
                 if status_data.get('status') == 'Done':
                     # Job is complete, get results
-                    return self.get_results(presign_data['get_url'])
+                    logger.info(f"Job complete, retrieving results from: {presign_data['get_url']}")
+                    result = self.get_results(presign_data['get_url'])
+                    logger.info(f"Results retrieved, length: {len(result)} characters")
+                    return result
                 
                 # Job is still processing, wait and retry
+                logger.info(f"Job still processing, waiting {retry_delay} seconds before retry")
                 time.sleep(retry_delay)
                 retries += 1
             except requests.HTTPError as e:
-                if e.response.status_code == 404:
+                if e.response and e.response.status_code == 404:
                     # Resource not ready yet, wait and retry
+                    logger.info(f"Resource not ready (404), waiting {retry_delay} seconds before retry")
                     time.sleep(retry_delay)
                     retries += 1
                 else:
                     # Other HTTP error
+                    logger.error(f"HTTP error while checking status: {str(e)}")
+                    if hasattr(e, 'response') and e.response is not None:
+                        logger.error(f"Response content: {e.response.text}")
                     raise
+            except Exception as e:
+                logger.error(f"Unexpected error while checking status: {str(e)}")
+                raise
         
+        logger.error(f"Processing timed out after {max_retries} retries")
         raise TimeoutError(f"Processing timed out after {max_retries} retries")
