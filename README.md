@@ -1,5 +1,8 @@
 # Hyland Data Curation Tools
 
+[![CI](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml/badge.svg)](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/tiry/datacuration_client/branch/master/graph/badge.svg)](https://codecov.io/gh/tiry/datacuration_client)
+
 This repository contains two Python packages for interacting with the Hyland Data Curation API:
 
 1. **datacuration_api**: A Python library that encapsulates the API functionality
