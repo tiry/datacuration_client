@@ -68,7 +68,7 @@ Update the CLI to support all the processing options available in the API.
 
 ## 3. GitHub Actions Workflow for Documentation Generation
 
-Add a GitHub Actions workflow to automatically generate Python documentation using Sphinx or pdoc3.
+Add a GitHub Actions workflow to automatically generate Python documentation using pdoc3.
 
 ### Requirements
 
@@ -79,10 +79,22 @@ Add a GitHub Actions workflow to automatically generate Python documentation usi
 
 ### Implementation Plan
 
-1. Add necessary dependencies to pyproject.toml (Sphinx or pdoc3)
+1. Add necessary dependencies to pyproject.toml (pdoc3)
 2. Create a documentation configuration file
 3. Create a GitHub Actions workflow file
 4. Update the README.md with a badge linking to the documentation
+
+### GitHub Pages Setup
+
+To enable GitHub Pages for the repository:
+
+1. Go to the repository on GitHub
+2. Click on "Settings"
+3. Scroll down to the "Pages" section
+4. Under "Source", select "GitHub Actions"
+5. Save the settings
+
+The GitHub Actions workflow will automatically generate and deploy the documentation to GitHub Pages whenever changes are pushed to the master branch.
 
 ## Success Criteria
 
