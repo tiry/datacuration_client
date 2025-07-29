@@ -21,13 +21,13 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     """Fixture to create a CLI runner."""
     return CliRunner()
 
 
 @pytest.fixture
-def pdf_file():
+def pdf_file() -> str:
     """Fixture to get the path to the test PDF file."""
     # The PDF file is in the tests/data directory
     pdf_path = Path(__file__).parent.parent.parent / "tests" / "data" / "2412.05958v1.pdf"
@@ -37,7 +37,7 @@ def pdf_file():
 
 
 @pytest.fixture
-def load_env():
+def load_env() -> None:
     """Fixture to load environment variables from .env file if present."""
     env_path = Path(__file__).parent.parent.parent / ".env"
     if env_path.exists():
@@ -58,7 +58,7 @@ def load_env():
 
 
 @pytest.mark.integration
-def test_process_pdf_file(runner, pdf_file, load_env):
+def test_process_pdf_file(runner: CliRunner, pdf_file: str, load_env: None) -> None:
     """Test processing a PDF file with the actual API."""
     # Create a temporary file for the output
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_file:
