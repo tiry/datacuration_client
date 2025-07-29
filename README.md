@@ -1,6 +1,7 @@
 # Hyland Data Curation Tools
 
 [![CI](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml/badge.svg)](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml)
+[![Integration Tests](https://github.com/tiry/datacuration_client/actions/workflows/integration.yml/badge.svg)](https://github.com/tiry/datacuration_client/actions/workflows/integration.yml)
 [![codecov](https://codecov.io/gh/tiry/datacuration_client/branch/master/graph/badge.svg)](https://codecov.io/gh/tiry/datacuration_client)
 
 This repository contains two Python packages for interacting with the Hyland Data Curation API:
@@ -36,7 +37,12 @@ datacuration_client/
 ├── datacuration_cli/         # CLI package
 │   ├── __init__.py           # Package initialization
 │   └── cli.py                # CLI implementation
-├── tests/                    # Legacy test directory
+│   └── tests/                # CLI tests
+│       ├── test_cli.py       # Unit tests for CLI
+│       └── test_integration.py # Integration tests
+├── tests/                    # Test data directory
+│   └── data/                 # Test files
+│       └── 2412.05958v1.pdf  # Sample PDF for testing
 ├── pyproject.toml            # Project configuration
 ├── README.md                 # This file
 └── .env.example              # Example environment variables
@@ -128,8 +134,14 @@ You can configure the API endpoint and authentication token using:
 # Install development dependencies
 pip install -e ".[dev]"
 
-# Run tests
+# Run unit tests (excluding integration tests)
 pytest
+
+# Run integration tests (requires API credentials)
+pytest -m integration
+
+# Run specific integration test file
+pytest datacuration_cli/tests/test_integration.py
 
 # Run type checking
 mypy datacuration_api datacuration_cli
@@ -137,6 +149,22 @@ mypy datacuration_api datacuration_cli
 # Format code
 black datacuration_api datacuration_cli
 ```
+
+### Integration Tests
+
+The project includes integration tests that verify the functionality against the actual Data Curation API. These tests:
+
+1. Are marked with `@pytest.mark.integration`
+2. Are skipped by default when running `pytest`
+3. Require valid API credentials to run
+4. Use a real PDF file to test the end-to-end flow
+
+To run integration tests:
+
+1. Ensure you have valid API credentials in your environment or `.env` file
+2. Run `pytest -m integration`
+
+The GitHub Actions workflow runs these integration tests automatically using repository secrets for authentication.
 
 ## License
 

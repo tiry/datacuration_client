@@ -46,6 +46,11 @@ datacuration = "datacuration_cli.cli:main"
 # Testing configuration
 [tool.pytest.ini_options]
 testpaths = ["datacuration_api/tests", "datacuration_cli/tests"]
+markers = [
+    "integration: marks tests as integration tests that require API credentials (deselect with '-m \"not integration\"')"
+]
+# Skip integration tests by default
+addopts = "-m 'not integration'"
 
 # Type checking configuration
 [tool.mypy]
