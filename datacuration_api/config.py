@@ -29,12 +29,17 @@ class Config:
         # Load environment variables from .env file if it exists
         load_dotenv()
         
-        self.api_base_url: str = os.getenv("DATA_CURATION_API_URL", DEFAULT_API_BASE_URL)
-        self.presign_endpoint: str = os.getenv("DATA_CURATION_PRESIGN_ENDPOINT", DEFAULT_PRESIGN_ENDPOINT)
-        self.status_endpoint: str = os.getenv("DATA_CURATION_STATUS_ENDPOINT", DEFAULT_STATUS_ENDPOINT)
-        self.auth_endpoint: str = os.getenv("DATA_CURATION_AUTH_ENDPOINT", DEFAULT_AUTH_ENDPOINT)
+        # Get environment variables and strip any whitespace/newlines
+        self.api_base_url: str = os.getenv("DATA_CURATION_API_URL", DEFAULT_API_BASE_URL).strip()
+        self.presign_endpoint: str = os.getenv("DATA_CURATION_PRESIGN_ENDPOINT", DEFAULT_PRESIGN_ENDPOINT).strip()
+        self.status_endpoint: str = os.getenv("DATA_CURATION_STATUS_ENDPOINT", DEFAULT_STATUS_ENDPOINT).strip()
+        self.auth_endpoint: str = os.getenv("DATA_CURATION_AUTH_ENDPOINT", DEFAULT_AUTH_ENDPOINT).strip()
         self.client_id: Optional[str] = os.getenv("DATA_CURATION_CLIENT_ID")
+        if self.client_id:
+            self.client_id = self.client_id.strip()
         self.client_secret: Optional[str] = os.getenv("DATA_CURATION_CLIENT_SECRET")
+        if self.client_secret:
+            self.client_secret = self.client_secret.strip()
         self.access_token: Optional[str] = None
         self.token_expiry: Optional[int] = None
         
@@ -46,6 +51,14 @@ class Config:
         logger.info(f"Auth Endpoint: {self.auth_endpoint}")
         logger.info(f"Client ID: {'*' * 5 if self.client_id else 'not set'}")
         logger.info(f"Client Secret: {'*' * 5 if self.client_secret else 'not set'}")
+        
+        # Log the length of each value to help debug any trailing whitespace issues
+        logger.info(f"API Base URL length: {len(self.api_base_url)}")
+        logger.info(f"Auth Endpoint length: {len(self.auth_endpoint)}")
+        if self.client_id:
+            logger.info(f"Client ID length: {len(self.client_id)}")
+        if self.client_secret:
+            logger.info(f"Client Secret length: {len(self.client_secret)}")
     
     def update(self, **kwargs: Any) -> None:
         """
@@ -56,6 +69,9 @@ class Config:
         """
         for key, value in kwargs.items():
             if hasattr(self, key) and value is not None:
+                # Strip whitespace from string values
+                if isinstance(value, str):
+                    value = value.strip()
                 logger.info(f"Updating config: {key} = {'*' * 5 if key in ['client_id', 'client_secret', 'access_token'] else value}")
                 setattr(self, key, value)
     

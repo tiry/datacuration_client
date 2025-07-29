@@ -61,12 +61,12 @@ def load_env() -> dict:
     if missing_vars:
         pytest.skip(f"Missing required environment variables: {', '.join(missing_vars)}")
     
-    # Get environment variables needed for the test
+    # Get environment variables needed for the test and strip any whitespace/newlines
     env_vars = {
-        "DATA_CURATION_CLIENT_ID": os.environ.get("DATA_CURATION_CLIENT_ID", ""),
-        "DATA_CURATION_CLIENT_SECRET": os.environ.get("DATA_CURATION_CLIENT_SECRET", ""),
-        "DATA_CURATION_AUTH_ENDPOINT": os.environ.get("DATA_CURATION_AUTH_ENDPOINT", ""),
-        "DATA_CURATION_API_URL": os.environ.get("DATA_CURATION_API_URL", "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation")
+        "DATA_CURATION_CLIENT_ID": os.environ.get("DATA_CURATION_CLIENT_ID", "").strip(),
+        "DATA_CURATION_CLIENT_SECRET": os.environ.get("DATA_CURATION_CLIENT_SECRET", "").strip(),
+        "DATA_CURATION_AUTH_ENDPOINT": os.environ.get("DATA_CURATION_AUTH_ENDPOINT", "").strip(),
+        "DATA_CURATION_API_URL": os.environ.get("DATA_CURATION_API_URL", "https://knowledge-enrichment.ai.experience.hyland.com/latest/api/data-curation").strip()
     }
     
     # Log environment variables (masking secrets)
@@ -75,6 +75,12 @@ def load_env() -> dict:
     logger.info(f"DATA_CURATION_CLIENT_SECRET: {'*' * 5 if env_vars['DATA_CURATION_CLIENT_SECRET'] else 'not set'}")
     logger.info(f"DATA_CURATION_AUTH_ENDPOINT: {env_vars['DATA_CURATION_AUTH_ENDPOINT']}")
     logger.info(f"DATA_CURATION_API_URL: {env_vars['DATA_CURATION_API_URL']}")
+    
+    # Log the length of each value to help debug any trailing whitespace issues
+    logger.info(f"DATA_CURATION_CLIENT_ID length: {len(env_vars['DATA_CURATION_CLIENT_ID'])}")
+    logger.info(f"DATA_CURATION_CLIENT_SECRET length: {len(env_vars['DATA_CURATION_CLIENT_SECRET'])}")
+    logger.info(f"DATA_CURATION_AUTH_ENDPOINT length: {len(env_vars['DATA_CURATION_AUTH_ENDPOINT'])}")
+    logger.info(f"DATA_CURATION_API_URL length: {len(env_vars['DATA_CURATION_API_URL'])}")
     
     return env_vars
 
