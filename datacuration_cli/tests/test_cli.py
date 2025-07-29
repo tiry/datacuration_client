@@ -82,8 +82,11 @@ def test_process_command_with_options(runner: CliRunner, mock_api_client: MagicM
         "process",
         str(test_file),
         "--chunking",
+        "--chunk-size", "2000",
         "--no-embedding",
-        "--normalization", "FULL",
+        "--normalize-quotations",
+        "--no-normalize-dashes",
+        "--json-schema",
         "--no-wait",
         "--max-retries", "5",
         "--retry-delay", "3"
@@ -97,8 +100,13 @@ def test_process_command_with_options(runner: CliRunner, mock_api_client: MagicM
         str(test_file),
         options={
             "chunking": True,
+            "chunk_size": 2000,
             "embedding": False,
-            "normalization": "FULL"
+            "normalization": {
+                "quotations": True,
+                "dashes": False
+            },
+            "json_schema": True
         },
         wait=False,
         max_retries=5,
@@ -131,6 +139,68 @@ def test_process_command_with_output_file(runner: CliRunner, mock_api_client: Ma
     
     # Verify the output file was created with the correct content
     assert output_file.read_text() == "Curated text content"
+
+
+def test_process_command_with_json_options(runner: CliRunner, mock_api_client: MagicMock, tmp_path: Path) -> None:
+    """Test the process command with JSON options."""
+    # Create a test file
+    test_file = tmp_path / "test_file.txt"
+    test_file.write_text("Test content")
+    
+    # Set up the mock API client
+    mock_api_client.process_file.return_value = "Curated text content"
+    
+    # Define options as JSON
+    options_json = json.dumps({
+        "normalization": {
+            "quotations": True,
+            "dashes": False
+        },
+        "chunking": True,
+        "chunk_size": 1500,
+        "embedding": True,
+        "json_schema": False
+    })
+    
+    # Run the command with JSON options
+    result = runner.invoke(cli, [
+        "process",
+        str(test_file),
+        "--options", options_json
+    ])
+    
+    # Verify the result
+    assert result.exit_code == 0
+    
+    # Parse the expected options
+    expected_options = json.loads(options_json)
+    
+    # Verify the API client was called correctly with the JSON options
+    mock_api_client.process_file.assert_called_once_with(
+        str(test_file),
+        options=expected_options,
+        wait=True,
+        max_retries=10,
+        retry_delay=2
+    )
+
+
+def test_process_command_with_invalid_json_options(runner: CliRunner, mock_api_client: MagicMock, tmp_path: Path) -> None:
+    """Test the process command with invalid JSON options."""
+    # Create a test file
+    test_file = tmp_path / "test_file.txt"
+    test_file.write_text("Test content")
+    
+    # Run the command with invalid JSON options
+    result = runner.invoke(cli, [
+        "process",
+        str(test_file),
+        "--options", "{invalid json"
+    ])
+    
+    # Verify the result
+    assert result.exit_code == 1
+    assert "Error parsing options JSON" in result.output
 
 
 def test_process_command_error(runner: CliRunner, mock_api_client: MagicMock, tmp_path: Path) -> None:

@@ -81,7 +81,26 @@ class DataCurationClient:
         Call the presign endpoint to get URLs for file upload and result retrieval.
         
         Args:
-            options: Optional processing options (normalization, chunking, embedding).
+            options: Optional processing options dictionary with the following possible keys:
+                normalization (dict): Controls text normalization options
+                    quotations (bool): When true, normalizes different types of quotation marks to standard ones
+                    dashes (bool): When true, normalizes different types of dashes to standard ones
+                chunking (bool): When true, splits the document into smaller chunks for processing
+                chunk_size (int): The target size (in characters) for each chunk when chunking is enabled
+                embedding (bool): When true, generates vector embeddings for the document or chunks
+                json_schema (bool): When true, returns the output in a structured JSON format
+            
+            Example:
+                {
+                  "normalization": {
+                    "quotations": true,
+                    "dashes": true
+                  },
+                  "chunking": true,
+                  "chunk_size": 1000,
+                  "embedding": true,
+                  "json_schema": false
+                }
             
         Returns:
             Dict containing job_id, put_url, and get_url.
@@ -127,7 +146,7 @@ class DataCurationClient:
         
         Args:
             file_path: Path to the file to upload.
-            options: Optional processing options.
+            options: Optional processing options. See presign() method for detailed options documentation.
             
         Returns:
             Dict containing job_id, put_url, and get_url.
@@ -254,13 +273,24 @@ class DataCurationClient:
         
         Args:
             file_path: Path to the file to process.
-            options: Optional processing options.
+            options: Optional processing options. See presign() method for detailed options documentation.
+                Example:
+                {
+                  "normalization": {
+                    "quotations": true,
+                    "dashes": true
+                  },
+                  "chunking": true,
+                  "chunk_size": 1000,
+                  "embedding": true,
+                  "json_schema": false
+                }
             wait: Whether to wait for processing to complete.
             max_retries: Maximum number of retries when waiting for results.
             retry_delay: Delay between retries in seconds.
             
         Returns:
-            The curated text.
+            The curated text. If json_schema is set to True in options, returns a JSON string.
             
         Raises:
             FileNotFoundError: If the file does not exist.

@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml/badge.svg)](https://github.com/tiry/datacuration_client/actions/workflows/ci.yml)
 [![Integration Tests](https://github.com/tiry/datacuration_client/actions/workflows/integration.yml/badge.svg)](https://github.com/tiry/datacuration_client/actions/workflows/integration.yml)
+[![Documentation](https://github.com/tiry/datacuration_client/actions/workflows/docs.yml/badge.svg)](https://tiry.github.io/datacuration_client/)
 [![codecov](https://codecov.io/gh/tiry/datacuration_client/branch/master/graph/badge.svg)](https://codecov.io/gh/tiry/datacuration_client)
 
 This repository contains two Python packages for interacting with the Hyland Data Curation API:
@@ -93,6 +94,9 @@ datacuration process path/to/file.pdf --output curated_text.txt
 
 # Enable specific processing options
 datacuration process path/to/file.pdf --chunking --embedding
+
+# Process with advanced options (using JSON)
+datacuration process path/to/file.pdf --options '{"normalization": {"quotations": true, "dashes": true}, "chunking": true, "chunk_size": 1000, "embedding": true}'
 ```
 
 ### Using the API Library
@@ -107,9 +111,14 @@ client = DataCurationClient(client_id="your_id", client_secret="your_secret")
 result = client.process_file(
     "path/to/file.pdf",
     options={
+        "normalization": {
+            "quotations": True,
+            "dashes": True
+        },
         "chunking": True,
+        "chunk_size": 1000,
         "embedding": True,
-        "normalization": "FULL"
+        "json_schema": False
     }
 )
 
@@ -125,6 +134,52 @@ You can configure the API endpoint and authentication token using:
 2. A `.env` file in the current directory
 3. Command-line options (for the CLI tool)
 4. Direct parameters (for the API library)
+
+## API Processing Options
+
+The Data Curation API supports the following processing options:
+
+### Normalization Options
+
+Control how text is normalized during processing:
+
+```json
+"normalization": {
+  "quotations": true,  // Normalize different types of quotation marks
+  "dashes": true       // Normalize different types of dashes
+}
+```
+
+### Chunking Options
+
+Control how the document is split into smaller chunks:
+
+```json
+"chunking": true,      // Enable document chunking
+"chunk_size": 1000     // Target size in characters for each chunk
+```
+
+### Embedding Options
+
+Control vector embedding generation:
+
+```json
+"embedding": true      // Generate vector embeddings for the document or chunks
+```
+
+### Output Format Options
+
+Control the output format:
+
+```json
+"json_schema": false   // Return output in a structured JSON format
+```
+
+For more detailed information about the API options, see the [API Options Documentation](docs/api_options.md).
+
+## Documentation
+
+API documentation is automatically generated and available at [https://tiry.github.io/datacuration_client/](https://tiry.github.io/datacuration_client/).
 
 ## Development
 

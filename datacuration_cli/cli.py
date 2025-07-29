@@ -69,14 +69,35 @@ def cli(client_id: Optional[str], client_secret: Optional[str], api_url: Optiona
     help="Enable/disable content chunking."
 )
 @click.option(
+    "--chunk-size",
+    type=int,
+    default=None,
+    help="Target size in characters for each chunk when chunking is enabled."
+)
+@click.option(
     "--embedding/--no-embedding",
     default=None,
     help="Enable/disable content embedding."
 )
 @click.option(
-    "--normalization",
+    "--normalize-quotations/--no-normalize-quotations",
+    default=None,
+    help="Enable/disable normalization of quotation marks."
+)
+@click.option(
+    "--normalize-dashes/--no-normalize-dashes",
+    default=None,
+    help="Enable/disable normalization of dashes."
+)
+@click.option(
+    "--json-schema/--no-json-schema",
+    default=None,
+    help="Enable/disable structured JSON output format."
+)
+@click.option(
+    "--options",
     type=str,
-    help="Normalization type (MDAST, FULL, PIPELINE)."
+    help="JSON string with all processing options. Overrides individual option flags."
 )
 @click.option(
     "--no-wait",
@@ -99,8 +120,12 @@ def process(
     file_path: str,
     output: Optional[str],
     chunking: Optional[bool],
+    chunk_size: Optional[int],
     embedding: Optional[bool],
-    normalization: Optional[str],
+    normalize_quotations: Optional[bool],
+    normalize_dashes: Optional[bool],
+    json_schema: Optional[bool],
+    options: Optional[str],
     no_wait: bool,
     max_retries: int,
     retry_delay: int,
@@ -109,24 +134,53 @@ def process(
     Process a file through the Data Curation API.
     
     FILE_PATH is the path to the file to process.
+    
+    Use individual option flags for basic configuration or the --options flag
+    with a JSON string for advanced configuration. The --options flag overrides
+    individual option flags.
     """
-    # Build options dictionary from provided flags
-    options: Dict[str, Any] = {}
-    
-    if chunking is not None:
-        options["chunking"] = chunking
-    
-    if embedding is not None:
-        options["embedding"] = embedding
-    
-    if normalization:
-        options["normalization"] = normalization
+    # Parse options from JSON string if provided
+    if options:
+        try:
+            options_dict: Dict[str, Any] = json.loads(options)
+            click.echo(f"Using options from JSON: {json.dumps(options_dict, indent=2)}")
+        except json.JSONDecodeError as e:
+            click.echo(f"Error parsing options JSON: {str(e)}", err=True)
+            sys.exit(1)
+    else:
+        # Build options dictionary from provided flags
+        options_dict = {}
+        
+        # Handle normalization options
+        if normalize_quotations is not None or normalize_dashes is not None:
+            options_dict["normalization"] = {}
+            
+            if normalize_quotations is not None:
+                options_dict["normalization"]["quotations"] = normalize_quotations
+                
+            if normalize_dashes is not None:
+                options_dict["normalization"]["dashes"] = normalize_dashes
+        
+        # Handle chunking options
+        if chunking is not None:
+            options_dict["chunking"] = chunking
+            
+        if chunk_size is not None:
+            options_dict["chunk_size"] = chunk_size
+        
+        # Handle embedding options
+        if embedding is not None:
+            options_dict["embedding"] = embedding
+        
+        # Handle output format options
+        if json_schema is not None:
+            options_dict["json_schema"] = json_schema
     
     try:
         client = DataCurationClient()
         result = client.process_file(
             file_path,
-            options=options,
+            options=options_dict,
             wait=not no_wait,
             max_retries=max_retries,
             retry_delay=retry_delay
