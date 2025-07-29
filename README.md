@@ -1,10 +1,20 @@
-# Data Curation API Client
+# Hyland Data Curation Tools
 
-A Python CLI client for the Hyland Data Curation API that transforms raw, unstructured content into structured data suitable for AI and machine learning applications.
+This repository contains two Python packages for interacting with the Hyland Data Curation API:
+
+1. **datacuration_api**: A Python library that encapsulates the API functionality
+2. **datacuration_cli**: A CLI tool that uses the datacuration_api library
+
+The Data Curation API transforms raw, unstructured content into structured data suitable for AI and machine learning applications.
 
 ## Project Description
 
-This client provides a simple command-line interface to interact with the Hyland Data Curation API. It allows users to:
+This project provides tools to interact with the Hyland Data Curation API:
+
+- The **datacuration_api** library allows developers to integrate the Data Curation API into their Python applications
+- The **datacuration_cli** tool provides a simple command-line interface for end users
+
+These tools enable you to:
 
 1. Upload files to the Data Curation API
 2. Retrieve the curated text from the API
@@ -15,17 +25,16 @@ The Data Curation API streamlines the extraction, enrichment, and structuring of
 ## Project Structure
 
 ```
-data_curation_client/
-├── data_curation_client/     # Main package directory
-│   ├── __init__.py           # Package initialization
-│   ├── api.py                # API client implementation
-│   ├── cli.py                # Command-line interface
+datacuration_client/
+├── datacuration_api/         # API library package
+│   ├── __init__.py           # Package initialization with version and exports
+│   ├── client.py             # API client implementation
 │   └── config.py             # Configuration handling
-├── tests/                    # Test directory
-│   ├── __init__.py
-│   ├── test_api.py           # API tests
-│   └── test_cli.py           # CLI tests
-├── pyproject.toml            # Project dependencies and metadata
+├── datacuration_cli/         # CLI package
+│   ├── __init__.py           # Package initialization
+│   └── cli.py                # CLI implementation
+├── tests/                    # Legacy test directory
+├── pyproject.toml            # Project configuration
 ├── README.md                 # This file
 └── .env.example              # Example environment variables
 ```
@@ -42,7 +51,7 @@ data_curation_client/
 1. Clone the repository:
    ```
    git clone <repository-url>
-   cd data_curation_client
+   cd datacuration_client
    ```
 
 2. Create and activate a virtual environment:
@@ -64,17 +73,39 @@ data_curation_client/
 
 ## Usage
 
-### Basic Usage
+### Using the CLI Tool
 
 ```bash
 # Process a file and retrieve curated text
-data-curation process path/to/file.pdf
+datacuration process path/to/file.pdf
 
 # Specify output file
-data-curation process path/to/file.pdf --output curated_text.txt
+datacuration process path/to/file.pdf --output curated_text.txt
 
 # Enable specific processing options
-data-curation process path/to/file.pdf --chunking --embedding
+datacuration process path/to/file.pdf --chunking --embedding
+```
+
+### Using the API Library
+
+```python
+from datacuration_api import DataCurationClient
+
+# Create a client
+client = DataCurationClient(client_id="your_id", client_secret="your_secret")
+
+# Process a file with options
+result = client.process_file(
+    "path/to/file.pdf",
+    options={
+        "chunking": True,
+        "embedding": True,
+        "normalization": "FULL"
+    }
+)
+
+# Print or save the result
+print(result)
 ```
 
 ### Configuration
@@ -83,7 +114,8 @@ You can configure the API endpoint and authentication token using:
 
 1. Environment variables
 2. A `.env` file in the current directory
-3. Command-line options
+3. Command-line options (for the CLI tool)
+4. Direct parameters (for the API library)
 
 ## Development
 
@@ -97,10 +129,10 @@ pip install -e ".[dev]"
 pytest
 
 # Run type checking
-mypy data_curation_client
+mypy datacuration_api datacuration_cli
 
 # Format code
-black data_curation_client tests
+black datacuration_api datacuration_cli
 ```
 
 ## License
