@@ -53,27 +53,36 @@ if [ ! -f "$FILE_PATH" ]; then
     exit 1
 fi
 
+# Get absolute path of the input file and its directory
+FILE_ABSOLUTE=$(realpath "$FILE_PATH")
+FILE_DIR=$(dirname "$FILE_ABSOLUTE")
+FILE_NAME=$(basename "$FILE_ABSOLUTE")
+
 print_info "Starting Data Curation processing..."
 print_info "Input file: $FILE_PATH"
+print_info "Resolved to: $FILE_ABSOLUTE"
 if [ -n "$OUTPUT_FILE" ]; then
     print_info "Output file: $OUTPUT_FILE"
 else
     print_info "Output: Console"
 fi
 
-# Build docker command
+# Build docker command with two volume mounts:
+# 1. Current directory to /workspace (for scripts and output files)
+# 2. File directory to /input (for input file access)
 DOCKER_CMD="docker run --rm \
   --env-file .env \
   -v \"$(pwd):/workspace\" \
+  -v \"$FILE_DIR:/input\" \
   -w /workspace \
   ghcr.io/filipw/dotnet-script:latest \
   datacuration.csx"
 
-# Add arguments
+# Add arguments - use /input/filename for the input file path inside container
 if [ -n "$OUTPUT_FILE" ]; then
-    DOCKER_CMD="$DOCKER_CMD \"$FILE_PATH\" \"$OUTPUT_FILE\""
+    DOCKER_CMD="$DOCKER_CMD \"/input/$FILE_NAME\" \"$OUTPUT_FILE\""
 else
-    DOCKER_CMD="$DOCKER_CMD \"$FILE_PATH\""
+    DOCKER_CMD="$DOCKER_CMD \"/input/$FILE_NAME\""
 fi
 
 print_info "Running Docker command..."

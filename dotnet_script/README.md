@@ -109,14 +109,18 @@ You can also use the provided helper scripts to simplify usage:
 ```bash
 chmod +x run-datacuration.sh
 ./run-datacuration.sh /path/to/file.pdf output.txt
+./run-datacuration.sh ~/Documents/file.pdf output.txt
+./run-datacuration.sh ../tests/data/file.pdf output.txt
 ```
 
 **For Windows (`run-datacuration.ps1`):**
 ```powershell
 .\run-datacuration.ps1 C:\path\to\file.pdf output.txt
+.\run-datacuration.ps1 C:\Users\username\Documents\file.pdf output.txt
 ```
 
 Both scripts provide:
+- Support for absolute and relative file paths
 - Automatic .env file validation
 - Input file existence checking
 - Colored console output
@@ -160,8 +164,9 @@ The script supports any file type that the Hyland Data Curation API can process,
    - Ensure your credentials have the necessary permissions
 
 2. **File Not Found**:
-   - Ensure the file path is correct and accessible from within the Docker container
-   - Use absolute paths or verify the volume mounting
+   - The helper scripts automatically handle path resolution for files outside the current directory
+   - Both absolute paths (e.g., `/Users/username/Documents/file.pdf` or `C:\Users\username\Documents\file.pdf`) and relative paths (e.g., `../tests/data/file.pdf`) are supported
+   - The scripts mount the file's directory to the Docker container automatically
 
 3. **Network Issues**:
    - Check your internet connection

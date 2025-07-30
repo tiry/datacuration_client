@@ -37,23 +37,32 @@ if (-not (Test-Path $FilePath)) {
     exit 1
 }
 
+# Get absolute path of the input file and its directory
+$FileAbsolute = Resolve-Path $FilePath
+$FileDir = Split-Path $FileAbsolute -Parent
+$FileName = Split-Path $FileAbsolute -Leaf
+
 Write-Info "Starting Data Curation processing..."
 Write-Info "Input file: $FilePath"
+Write-Info "Resolved to: $FileAbsolute"
 if ($OutputFile) {
     Write-Info "Output file: $OutputFile"
 } else {
     Write-Info "Output: Console"
 }
 
-# Build docker command
+# Build docker command with two volume mounts:
+# 1. Current directory to /workspace (for scripts and output files)
+# 2. File directory to /input (for input file access)
 $dockerArgs = @(
     "run", "--rm",
     "--env-file", ".env",
     "-v", "${PWD}:/workspace",
+    "-v", "${FileDir}:/input",
     "-w", "/workspace",
     "ghcr.io/filipw/dotnet-script:latest",
     "datacuration.csx",
-    $FilePath
+    "/input/$FileName"
 )
 
 if ($OutputFile) {
