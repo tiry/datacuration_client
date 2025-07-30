@@ -75,7 +75,13 @@ docker run --rm \
 
 ### Using PowerShell/Windows
 
-For Windows users with PowerShell:
+For Windows users with PowerShell, you can use the provided PowerShell script:
+```powershell
+.\run-datacuration.ps1 C:\path\to\your\file.pdf
+.\run-datacuration.ps1 C:\path\to\your\file.pdf output.txt
+```
+
+Or run Docker directly:
 ```powershell
 docker run --rm `
   --env-file .env `
@@ -87,28 +93,24 @@ docker run --rm `
 
 ### Helper Scripts
 
-You can also create a shell script to simplify usage:
+You can also use the provided helper scripts to simplify usage:
 
-**`run-datacuration.sh`:**
-```bash
-#!/bin/bash
-docker run --rm \
-  --env-file .env \
-  -v "$(pwd)":/workspace \
-  -w /workspace \
-  ghcr.io/filipw/dotnet-script:latest \
-  datacuration.csx "$@"
-```
-
-Make it executable:
+**For Linux/macOS (`run-datacuration.sh`):**
 ```bash
 chmod +x run-datacuration.sh
-```
-
-Then use it:
-```bash
 ./run-datacuration.sh /path/to/file.pdf output.txt
 ```
+
+**For Windows (`run-datacuration.ps1`):**
+```powershell
+.\run-datacuration.ps1 C:\path\to\file.pdf output.txt
+```
+
+Both scripts provide:
+- Automatic .env file validation
+- Input file existence checking
+- Colored console output
+- Error handling and user-friendly messages
 
 ## Script Options
 
@@ -156,6 +158,11 @@ The script supports any file type that the Hyland Data Curation API can process,
    - Verify API endpoints are accessible
    - Check for any corporate firewall restrictions
 
+4. **Docker Container Timeout**:
+   - Some environments may have slower startup times
+   - If the script appears to hang, it might be downloading .NET packages
+   - Try running with `--verbose` flag: `docker run --rm -v "$(pwd)":/workspace -w /workspace ghcr.io/filipw/dotnet-script:latest --verbosity debug datacuration.csx`
+
 ### Debug Mode
 
 To see more detailed logging, you can modify the script to include additional console output or check the API response details.
@@ -172,6 +179,41 @@ Check volume mounting:
 docker run --rm -v "$(pwd)":/workspace -w /workspace ghcr.io/filipw/dotnet-script:latest ls -la
 ```
 
+### Testing Script Syntax
+
+You can test if your script has syntax errors by running:
+```bash
+docker run --rm -v "$(pwd)":/workspace -w /workspace ghcr.io/filipw/dotnet-script:latest --info
+```
+
+## API Implementation Details
+
+### Core Functionality
+
+The C# script implements the complete Data Curation API workflow:
+
+1. **OAuth2 Authentication**:
+   - Uses client credentials grant type
+   - Stores access token for subsequent requests
+   - Automatic token refresh when needed
+
+2. **File Processing Pipeline**:
+   - Calls `/presign` endpoint to get upload/download URLs
+   - Uploads file via PUT request to signed URL
+   - Polls `/status/{job_id}` endpoint until completion
+   - Downloads results from signed GET URL
+
+3. **Error Handling**:
+   - Network timeout handling with retries
+   - HTTP error code checking
+   - Graceful handling of 404 responses during polling
+   - User-friendly error messages
+
+4. **JSON Processing**:
+   - Custom lightweight JSON parser to avoid external dependencies
+   - Regex-based extraction for simple values
+   - Built-in processing options configuration
+
 ## API Flow
 
 The script follows this workflow:
@@ -186,15 +228,24 @@ The script follows this workflow:
 
 This C# script provides equivalent functionality to the Python client:
 
-| Feature | Python Client | C# Script |
-|---------|---------------|-----------|
-| Authentication | ✅ | ✅ |
-| File Upload | ✅ | ✅ |
-| Processing Options | ✅ | ✅ (basic) |
-| Status Monitoring | ✅ | ✅ |
-| Result Retrieval | ✅ | ✅ |
-| CLI Interface | ✅ | ✅ (simplified) |
-| Docker Support | - | ✅ |
+| Feature | Python Client | C# Script | Notes |
+|---------|---------------|-----------|-------|
+| Authentication | ✅ | ✅ | OAuth2 client credentials |
+| File Upload | ✅ | ✅ | Presigned URL upload |
+| Processing Options | ✅ | ✅ (basic) | Default normalization settings |
+| Status Monitoring | ✅ | ✅ | Polling with retry logic |
+| Result Retrieval | ✅ | ✅ | From presigned GET URL |
+| CLI Interface | ✅ | ✅ (simplified) | Command line arguments |
+| Docker Support | - | ✅ | No .NET installation required |
+| Error Handling | ✅ | ✅ | Network and API errors |
+| Configuration | ✅ | ✅ | Environment variables |
+
+### Key Differences
+
+- **Dependencies**: C# script uses no external packages, Python client uses requests/click
+- **JSON Handling**: C# uses custom regex parser, Python uses built-in json module
+- **Deployment**: C# runs in Docker container, Python requires local installation
+- **Options**: C# has fixed default options, Python supports full customization
 
 ## License
 

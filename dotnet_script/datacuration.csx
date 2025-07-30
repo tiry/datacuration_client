@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 // Configuration class to hold API settings and credentials
 public class DataCurationConfig
@@ -21,10 +22,23 @@ public class DataCurationConfig
     
     public void Validate()
     {
+        var missingVars = new List<string>();
+        
         if (string.IsNullOrWhiteSpace(ClientId))
-            throw new ArgumentException("DATA_CURATION_CLIENT_ID environment variable is required");
+            missingVars.Add("DATA_CURATION_CLIENT_ID");
         if (string.IsNullOrWhiteSpace(ClientSecret))
-            throw new ArgumentException("DATA_CURATION_CLIENT_SECRET environment variable is required");
+            missingVars.Add("DATA_CURATION_CLIENT_SECRET");
+            
+        if (missingVars.Any())
+        {
+            var message = $"Missing required environment variables: {string.Join(", ", missingVars)}\n" +
+                         "Please set them in your .env file or as environment variables.";
+            throw new ArgumentException(message);
+        }
+        
+        Console.WriteLine("Configuration validated successfully");
+        Console.WriteLine($"Auth Endpoint: {AuthEndpoint}");
+        Console.WriteLine($"API Base URL: {ApiBaseUrl}");
     }
 }
 
