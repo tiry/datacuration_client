@@ -74,7 +74,7 @@ public static class SimpleJsonParser
 }
 
 // Main Data Curation API client
-public class DataCurationClient
+public class DataCurationClient : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly DataCurationConfig _config;
