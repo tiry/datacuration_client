@@ -193,7 +193,7 @@ public class DataCurationClient
 
         try
         {
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            var fileBytes = File.ReadAllBytes(filePath);
             var content = new ByteArrayContent(fileBytes);
             content.Headers.Add("Content-Type", "application/octet-stream");
 
@@ -354,19 +354,20 @@ async Task Main(string[] args)
 
     try
     {
-        using var client = new DataCurationClient();
-        
-        var result = await client.ProcessFileAsync(filePath);
-        
-        if (!string.IsNullOrEmpty(outputFile))
+        using (var client = new DataCurationClient())
         {
-            await File.WriteAllTextAsync(outputFile, result);
-            Console.WriteLine($"Results saved to: {outputFile}");
-        }
-        else
-        {
-            Console.WriteLine("=== CURATED TEXT ===");
-            Console.WriteLine(result);
+            var result = await client.ProcessFileAsync(filePath);
+            
+            if (!string.IsNullOrEmpty(outputFile))
+            {
+                File.WriteAllText(outputFile, result);
+                Console.WriteLine($"Results saved to: {outputFile}");
+            }
+            else
+            {
+                Console.WriteLine("=== CURATED TEXT ===");
+                Console.WriteLine(result);
+            }
         }
     }
     catch (Exception ex)

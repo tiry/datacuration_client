@@ -9,11 +9,21 @@ This directory contains a C# script implementation of the Hyland Data Curation A
 - **Processing**: Wait for file processing completion
 - **Results Retrieval**: Download and display curated text
 - **Docker Support**: Run without installing .NET Framework locally
+- **.NET Framework 4.8 Compatible**: Uses minimal dependencies and compatible APIs
 
 ## Prerequisites
 
-- Docker (for containerized execution)
+- Docker (for containerized execution) OR .NET Framework 4.8+ / .NET Core 2.1+ with dotnet-script tool
 - Valid Hyland Data Curation API credentials (client ID and secret)
+
+### Compatibility
+
+This implementation is compatible with:
+- .NET Framework 4.8+
+- .NET Core 2.1+
+- .NET 5.0+
+
+The script uses only standard .NET APIs available across all these platforms with minimal external dependencies.
 
 ## Setup
 
