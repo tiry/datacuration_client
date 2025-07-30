@@ -144,12 +144,14 @@ public class DataCurationClient : IDisposable
         var json = optionsJson ?? SimpleJsonParser.BuildBasicOptionsJson();
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_accessToken}");
+        // Create a request message with Authorization header for this specific request
+        var request = new HttpRequestMessage(HttpMethod.Post, _config.PresignEndpoint);
+        request.Content = content;
+        request.Headers.Add("Authorization", $"Bearer {_accessToken}");
 
         try
         {
-            var response = await _httpClient.PostAsync(_config.PresignEndpoint, content);
+            var response = await _httpClient.SendAsync(request);
             var responseContent = await response.Content.ReadAsStringAsync();
             
             Console.WriteLine($"Presign response status: {response.StatusCode}");
@@ -227,12 +229,13 @@ public class DataCurationClient : IDisposable
         var statusUrl = $"{_config.StatusEndpoint}/{jobId}";
         Console.WriteLine($"Checking job status: {statusUrl}");
 
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_accessToken}");
+        // Create a request message with Authorization header for this specific request
+        var request = new HttpRequestMessage(HttpMethod.Get, statusUrl);
+        request.Headers.Add("Authorization", $"Bearer {_accessToken}");
 
         try
         {
-            var response = await _httpClient.GetAsync(statusUrl);
+            var response = await _httpClient.SendAsync(request);
             var responseContent = await response.Content.ReadAsStringAsync();
             
             Console.WriteLine($"Status check response: {response.StatusCode}");
